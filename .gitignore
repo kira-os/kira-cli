@@ -1,0 +1,30 @@
+# Binaries
+kira
+kira-*
+*.exe
+
+# Test coverage
+coverage.out
+coverage.html
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Go specific
+*.test
+*.prof
+
+# Demo workspace
+demo-workspace/
+
+# Temporary files
+*.tmp
+*.temp
+
