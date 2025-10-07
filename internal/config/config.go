@@ -64,7 +64,7 @@ var DefaultConfig = Config{
 
 func LoadConfig() (*Config, error) {
 	configPath := ".work/kira.yml"
-	
+
 	// Check if config file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return &DefaultConfig, nil
@@ -128,20 +128,25 @@ func mergeWithDefaults(config *Config) {
 }
 
 func SaveConfig(config *Config) error {
-	data, err := yaml.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("failed to marshal config: %w", err)
-	}
+    return SaveConfigToDir(config, ".")
+}
 
-	configPath := ".work/kira.yml"
-	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
-	}
+// SaveConfigToDir saves the config to the specified target directory under .work/kira.yml
+func SaveConfigToDir(config *Config, targetDir string) error {
+    data, err := yaml.Marshal(config)
+    if err != nil {
+        return fmt.Errorf("failed to marshal config: %w", err)
+    }
 
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write config file: %w", err)
-	}
+    configPath := filepath.Join(targetDir, ".work", "kira.yml")
+    if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+        return fmt.Errorf("failed to create config directory: %w", err)
+    }
 
-	return nil
+    if err := os.WriteFile(configPath, data, 0644); err != nil {
+        return fmt.Errorf("failed to write config file: %w", err)
+    }
+
+    return nil
 }
 

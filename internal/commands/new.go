@@ -41,7 +41,7 @@ All arguments are optional - will prompt for selection if not provided.`,
 
 func init() {
 	newCmd.Flags().Bool("ignore-input", false, "Skip interactive input prompts")
-	newCmd.Flags().StringToStringP("input", "i", nil, "Provide input values directly (e.g., --input due:2025-10-01)")
+    newCmd.Flags().StringToStringP("input", "i", nil, "Provide input values directly (e.g., --input due=2025-10-01)")
 	newCmd.Flags().Bool("help-inputs", false, "List available input variables for a template")
 }
 
@@ -228,7 +228,7 @@ func showTemplateInputs(cfg *config.Config, template string) error {
 
 func promptForInput(input templates.Input) (string, error) {
 	prompt := fmt.Sprintf("Enter %s (%s): ", input.Name, input.Description)
-	
+
 	switch input.Type {
 	case templates.InputString:
 		if len(input.Options) > 0 {
@@ -260,7 +260,7 @@ func promptStringOptions(prompt string, options []string) (string, error) {
 		fmt.Printf("%d. %s\n", i+1, option)
 	}
 	fmt.Print("Select option (number): ")
-	
+
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
 	if err != nil {
@@ -282,13 +282,13 @@ func promptNumber(prompt string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Validate it's a number
 	_, err = strconv.Atoi(strings.TrimSpace(input))
 	if err != nil {
 		return "", fmt.Errorf("invalid number: %v", err)
 	}
-	
+
 	return strings.TrimSpace(input), nil
 }
 
@@ -299,13 +299,13 @@ func promptDateTime(prompt, format string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Validate date format
 	_, err = time.Parse(format, strings.TrimSpace(input))
 	if err != nil {
 		return "", fmt.Errorf("invalid date format: %v", err)
 	}
-	
+
 	return strings.TrimSpace(input), nil
 }
 

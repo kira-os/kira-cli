@@ -63,8 +63,8 @@ This file is for capturing quick ideas and thoughts that don't fit into formal w
 		return fmt.Errorf("failed to create IDEAS.md: %w", err)
 	}
 
-	// Create kira.yml config file
-	if err := config.SaveConfig(&config.DefaultConfig); err != nil {
+    // Create kira.yml config file under the target directory
+    if err := config.SaveConfigToDir(&config.DefaultConfig, targetDir); err != nil {
 		return fmt.Errorf("failed to create kira.yml: %w", err)
 	}
 

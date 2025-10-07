@@ -1,16 +1,18 @@
 package validation
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
+    "fmt"
+    "os"
+    "path/filepath"
+    "regexp"
+    "sort"
+    "strconv"
+    "strings"
+    "time"
 
-	"kira/internal/config"
+    "gopkg.in/yaml.v3"
+
+    "kira/internal/config"
 )
 
 type ValidationError struct {
@@ -38,7 +40,7 @@ func (r *ValidationResult) Error() string {
 	if !r.HasErrors() {
 		return ""
 	}
-	
+
 	var messages []string
 	for _, err := range r.Errors {
 		messages = append(messages, err.Error())
@@ -57,121 +59,119 @@ type WorkItem struct {
 
 func ValidateWorkItems(cfg *config.Config) (*ValidationResult, error) {
 	result := &ValidationResult{}
-	
+
 	// Get all work item files
 	files, err := getWorkItemFiles()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get work item files: %w", err)
 	}
-	
+
 	// Track IDs for duplicate checking
 	idMap := make(map[string][]string)
-	
+
 	for _, file := range files {
 		workItem, err := parseWorkItemFile(file)
 		if err != nil {
 			result.AddError(file, fmt.Sprintf("failed to parse file: %v", err))
 			continue
 		}
-		
+
 		// Validate required fields
 		if err := validateRequiredFields(workItem, cfg); err != nil {
 			result.AddError(file, err.Error())
 		}
-		
+
 		// Validate ID format
 		if err := validateIDFormat(workItem.ID, cfg); err != nil {
 			result.AddError(file, err.Error())
 		}
-		
+
 		// Validate status values
 		if err := validateStatus(workItem.Status, cfg); err != nil {
 			result.AddError(file, err.Error())
 		}
-		
+
 		// Validate date formats
 		if err := validateDateFormats(workItem); err != nil {
 			result.AddError(file, err.Error())
 		}
-		
+
 		// Track ID for duplicate checking
 		idMap[workItem.ID] = append(idMap[workItem.ID], file)
 	}
-	
+
 	// Check for duplicate IDs
 	for id, files := range idMap {
 		if len(files) > 1 {
 			result.AddError(files[0], fmt.Sprintf("duplicate ID found: %s in files %s", id, strings.Join(files, ", ")))
 		}
 	}
-	
+
 	// Validate workflow rules
 	if err := validateWorkflowRules(cfg); err != nil {
 		result.AddError("workflow", err.Error())
 	}
-	
+
 	return result, nil
 }
 
 func getWorkItemFiles() ([]string, error) {
 	var files []string
-	
+
 	err := filepath.Walk(".work", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// Skip directories and non-markdown files
 		if info.IsDir() || !strings.HasSuffix(path, ".md") {
 			return nil
 		}
-		
+
 		// Skip template files and IDEAS.md
 		if strings.Contains(path, "template") || strings.HasSuffix(path, "IDEAS.md") {
 			return nil
 		}
-		
+
 		files = append(files, path)
 		return nil
 	})
-	
+
 	return files, err
 }
 
 func parseWorkItemFile(filePath string) (*WorkItem, error) {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-	
-	// Parse YAML front matter
-	lines := strings.Split(string(content), "\n")
-	var yamlLines []string
-	inYAML := false
-	
-	for i, line := range lines {
-		if i == 0 && strings.TrimSpace(line) == "---" {
-			inYAML = true
-			continue
-		}
-		if inYAML && strings.TrimSpace(line) == "---" {
-			break
-		}
-		if inYAML {
-			yamlLines = append(yamlLines, line)
-		}
-	}
-	
-	// For now, return a basic work item - in a real implementation,
-	// you'd parse the YAML properly
-	return &WorkItem{
-		ID:      "001",
-		Title:   "Sample",
-		Status:  "todo",
-		Kind:    "prd",
-		Created: "2024-01-01",
-		Fields:  make(map[string]interface{}),
-	}, nil
+    content, err := os.ReadFile(filePath)
+    if err != nil {
+        return nil, err
+    }
+
+    // Extract YAML front matter between the first pair of --- lines
+    lines := strings.Split(string(content), "\n")
+    var yamlLines []string
+    inYAML := false
+    for i, line := range lines {
+        trimmed := strings.TrimSpace(line)
+        if i == 0 && trimmed == "---" {
+            inYAML = true
+            continue
+        }
+        if inYAML {
+            if trimmed == "---" {
+                break
+            }
+            yamlLines = append(yamlLines, line)
+        }
+    }
+
+    wi := &WorkItem{Fields: make(map[string]interface{})}
+    if len(yamlLines) > 0 {
+        if err := yaml.Unmarshal([]byte(strings.Join(yamlLines, "\n")), wi); err != nil {
+            return nil, fmt.Errorf("failed to parse front matter: %w", err)
+        }
+    }
+
+    return wi, nil
 }
 
 func validateRequiredFields(workItem *WorkItem, cfg *config.Config) error {
@@ -229,7 +229,7 @@ func validateDateFormats(workItem *WorkItem) error {
 			return fmt.Errorf("invalid created date format: %s", workItem.Created)
 		}
 	}
-	
+
 	// Validate other date fields if present
 	for key, value := range workItem.Fields {
 		if strings.Contains(key, "date") || strings.Contains(key, "due") {
@@ -240,7 +240,7 @@ func validateDateFormats(workItem *WorkItem) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -252,19 +252,19 @@ func validateWorkflowRules(cfg *config.Config) error {
 		if err != nil {
 			return fmt.Errorf("failed to read doing folder: %w", err)
 		}
-		
+
 		var workItems []string
 		for _, file := range files {
 			if !file.IsDir() && strings.HasSuffix(file.Name(), ".md") {
 				workItems = append(workItems, file.Name())
 			}
 		}
-		
+
 		if len(workItems) > 1 {
 			return fmt.Errorf("multiple items in doing folder. Only one item allowed at a time. Found: %s", strings.Join(workItems, ", "))
 		}
 	}
-	
+
 	return nil
 }
 
@@ -273,33 +273,33 @@ func GetNextID() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get work item files: %w", err)
 	}
-	
+
 	var maxID int
 	for _, file := range files {
 		workItem, err := parseWorkItemFile(file)
 		if err != nil {
 			continue
 		}
-		
+
 		if id, err := strconv.Atoi(workItem.ID); err == nil {
 			if id > maxID {
 				maxID = id
 			}
 		}
 	}
-	
+
 	nextID := maxID + 1
 	return fmt.Sprintf("%03d", nextID), nil
 }
 
 func FixDuplicateIDs() (*ValidationResult, error) {
 	result := &ValidationResult{}
-	
+
 	files, err := getWorkItemFiles()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get work item files: %w", err)
 	}
-	
+
 	// Group files by ID
 	idGroups := make(map[string][]string)
 	for _, file := range files {
@@ -309,7 +309,7 @@ func FixDuplicateIDs() (*ValidationResult, error) {
 		}
 		idGroups[workItem.ID] = append(idGroups[workItem.ID], file)
 	}
-	
+
 	// Fix duplicates by assigning new IDs to newer files
 	for _, files := range idGroups {
 		if len(files) > 1 {
@@ -319,7 +319,7 @@ func FixDuplicateIDs() (*ValidationResult, error) {
 				info2, _ := os.Stat(files[j])
 				return info1.ModTime().After(info2.ModTime())
 			})
-			
+
 			// Keep the oldest file with the original ID, assign new IDs to others
 			for i := 1; i < len(files); i++ {
 				newID, err := GetNextID()
@@ -327,7 +327,7 @@ func FixDuplicateIDs() (*ValidationResult, error) {
 					result.AddError(files[i], fmt.Sprintf("failed to generate new ID: %v", err))
 					continue
 				}
-				
+
 				// Update the file with new ID
 				if err := updateWorkItemID(files[i], newID); err != nil {
 					result.AddError(files[i], fmt.Sprintf("failed to update ID: %v", err))
@@ -335,7 +335,7 @@ func FixDuplicateIDs() (*ValidationResult, error) {
 			}
 		}
 	}
-	
+
 	return result, nil
 }
 
@@ -344,7 +344,7 @@ func updateWorkItemID(filePath, newID string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Replace the ID in the YAML front matter
 	lines := strings.Split(string(content), "\n")
 	for i, line := range lines {
@@ -353,6 +353,6 @@ func updateWorkItemID(filePath, newID string) error {
 			break
 		}
 	}
-	
+
 	return os.WriteFile(filePath, []byte(strings.Join(lines, "\n")), 0644)
 }

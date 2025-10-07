@@ -5,6 +5,21 @@
 
 set -e
 
+# Flags
+KEEP=0
+for arg in "$@"; do
+  case "$arg" in
+    -k|--keep)
+      KEEP=1
+      ;;
+    -h|--help)
+      echo "Usage: $0 [--keep|-k]"
+      echo "  --keep, -k  Preserve the generated test directory (skip cleanup)"
+      exit 0
+      ;;
+  esac
+done
+
 echo "🧪 Testing Kira CLI Tool"
 echo "========================="
 
@@ -14,7 +29,9 @@ go build -o kira cmd/kira/main.go
 echo "✅ Build successful"
 
 # Create test directory
+ROOT_DIR="$(pwd)"
 TEST_DIR="test-kira-$(date +%s)"
+TEST_DIR_ABS="$ROOT_DIR/$TEST_DIR"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR"
 
@@ -81,45 +98,45 @@ else
     exit 1
 fi
 
-# Test 6: Create a work item manually
+# Test 6: Create a work item via 'kira new' with explicit inputs
 echo ""
-echo "📋 Test 6: Create a work item"
-cat > .work/1_todo/001-test-feature.prd.md << 'EOF'
----
-id: 001
-title: Test Feature
-status: todo
-kind: prd
-assigned: test@example.com
-estimate: 3
-created: 2024-01-01
----
+echo "📋 Test 6: Create a work item via 'kira new' (with --input)"
+../kira new prd "Test Feature From Inputs" todo \
+  --input assigned=qa@example.com \
+  --input estimate=5 \
+  --input due=2025-12-31 \
+  --input tags="frontend,api" \
+  --input criteria1="Login works" \
+  --input criteria2="Logout works" \
+  --input context="Context text" \
+  --input requirements="Requirements text" \
+  --input implementation="Implementation notes" \
+  --input release_notes="Release notes here"
 
-# Test Feature
-
-## Context
-This is a test feature for integration testing.
-
-## Requirements
-- Implement user authentication
-- Add login/logout functionality
-
-## Acceptance Criteria
-- [ ] User can log in with email/password
-- [ ] User can log out
-- [ ] Session is maintained across page refreshes
-
-## Implementation Notes
-Use JWT tokens for authentication.
-
-## Release Notes
-Added user authentication system.
-EOF
-
-if [ -f ".work/1_todo/001-test-feature.prd.md" ]; then
-    echo "✅ Work item created successfully"
+# Determine created file path dynamically (first PRD in 1_todo)
+WORK_ITEM_PATH=$(find .work/1_todo -maxdepth 1 -type f -name "*.prd.md" | head -n 1)
+if [ -n "$WORK_ITEM_PATH" ] && [ -f "$WORK_ITEM_PATH" ]; then
+    echo "✅ Work item created successfully: $WORK_ITEM_PATH"
 else
     echo "❌ Work item creation failed"
+    exit 1
+fi
+
+# Validate template fields were filled
+if grep -q "^title: Test Feature From Inputs$" "$WORK_ITEM_PATH" && \
+   grep -q "^status: todo$" "$WORK_ITEM_PATH" && \
+   grep -q "^kind: prd$" "$WORK_ITEM_PATH" && \
+   grep -q "^assigned: qa@example.com$" "$WORK_ITEM_PATH" && \
+   grep -q "^estimate: 5$" "$WORK_ITEM_PATH" && \
+   grep -q "^due: 2025-12-31$" "$WORK_ITEM_PATH" && \
+   grep -q "^tags: frontend,api$" "$WORK_ITEM_PATH" && \
+   grep -q "^# Test Feature From Inputs$" "$WORK_ITEM_PATH"; then
+    echo "✅ Template fields filled correctly from inputs"
+else
+    echo "❌ Template fields not filled as expected"
+    echo "----- File contents -----"
+    cat "$WORK_ITEM_PATH"
+    echo "-------------------------"
     exit 1
 fi
 
@@ -147,10 +164,13 @@ fi
 echo ""
 echo "🔄 Test 9: Move work item"
 ../kira move 001 doing
-if [ -f ".work/2_doing/001-test-feature.prd.md" ] && [ ! -f ".work/1_todo/001-test-feature.prd.md" ]; then
+MOVED_PATH=".work/2_doing/$(basename "$WORK_ITEM_PATH")"
+if [ -f "$MOVED_PATH" ] && [ ! -f "$WORK_ITEM_PATH" ]; then
     echo "✅ Work item moved successfully"
 else
     echo "❌ Work item move failed"
+    echo "Expected moved path: $MOVED_PATH"
+    echo "Original path: $WORK_ITEM_PATH"
     exit 1
 fi
 
@@ -173,11 +193,15 @@ fi
 
 # Cleanup
 echo ""
-echo "🧹 Cleaning up..."
-cd ..
-rm -rf "$TEST_DIR"
-rm -f kira
-echo "✅ Cleanup complete"
+if [ "$KEEP" -eq 1 ] || [ "${KEEP_TEST_DIR:-0}" -ne 0 ]; then
+  echo "ℹ️ Skipping cleanup; test directory preserved at: $TEST_DIR_ABS"
+else
+  echo "🧹 Cleaning up..."
+  cd ..
+  rm -rf "$TEST_DIR"
+  rm -f kira
+  echo "✅ Cleanup complete"
+fi
 
 echo ""
 echo "🎉 All tests passed! Kira is working correctly."
