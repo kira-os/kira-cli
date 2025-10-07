@@ -1,13 +1,15 @@
 package commands
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
+    "bufio"
+    "fmt"
+    "os"
+    "path/filepath"
+    "strings"
 
-	"github.com/spf13/cobra"
-	"kira/internal/config"
-	"kira/internal/templates"
+    "github.com/spf13/cobra"
+    "kira/internal/config"
+    "kira/internal/templates"
 )
 
 var initCmd = &cobra.Command{
@@ -21,8 +23,20 @@ var initCmd = &cobra.Command{
 			targetDir = args[0]
 		}
 
-		return initializeWorkspace(targetDir)
+        force, _ := cmd.Flags().GetBool("force")
+        fillMissing, _ := cmd.Flags().GetBool("fill-missing")
+        workPath := filepath.Join(targetDir, ".work")
+        if err := ensureDirDecision(workPath, force, fillMissing); err != nil {
+            return err
+        }
+
+        return initializeWorkspace(targetDir)
 	},
+}
+
+func init() {
+    initCmd.Flags().Bool("force", false, "Overwrite existing .work directory if present")
+    initCmd.Flags().Bool("fill-missing", false, "Create any missing files/folders without overwriting existing ones")
 }
 
 func initializeWorkspace(targetDir string) error {
@@ -32,19 +46,25 @@ func initializeWorkspace(targetDir string) error {
 		return fmt.Errorf("failed to create .work directory: %w", err)
 	}
 
-	// Create status folders
+    // Create status folders and .gitkeep files
 	cfg := &config.DefaultConfig
 	for _, folder := range cfg.StatusFolders {
 		folderPath := filepath.Join(workDir, folder)
 		if err := os.MkdirAll(folderPath, 0755); err != nil {
 			return fmt.Errorf("failed to create folder %s: %w", folder, err)
 		}
+        if err := os.WriteFile(filepath.Join(folderPath, ".gitkeep"), []byte(""), 0644); err != nil {
+            return fmt.Errorf("failed to create .gitkeep in %s: %w", folder, err)
+        }
 	}
 
-	// Create templates directory and default templates
+    // Create templates directory and default templates and .gitkeep
 	if err := templates.CreateDefaultTemplates(workDir); err != nil {
 		return fmt.Errorf("failed to create default templates: %w", err)
 	}
+    if err := os.WriteFile(filepath.Join(workDir, "templates", ".gitkeep"), []byte(""), 0644); err != nil {
+        return fmt.Errorf("failed to create .gitkeep in templates: %w", err)
+    }
 
 	// Create IDEAS.md file
 	ideasPath := filepath.Join(workDir, "IDEAS.md")
@@ -70,4 +90,39 @@ This file is for capturing quick ideas and thoughts that don't fit into formal w
 
 	fmt.Printf("Initialized kira workspace in %s\n", targetDir)
 	return nil
+}
+
+func ensureDirDecision(workPath string, force, fillMissing bool) error {
+    if _, err := os.Stat(workPath); os.IsNotExist(err) {
+        return nil
+    }
+    if force {
+        if err := os.RemoveAll(workPath); err != nil {
+            return fmt.Errorf("failed to remove existing .work: %w", err)
+        }
+        return nil
+    }
+    if fillMissing {
+        return nil
+    }
+
+    fmt.Println(".work already exists. Choose an option: [c]ancel, [o]verwrite, [f]ill-missing")
+    fmt.Print("Enter choice (c/o/f): ")
+    reader := bufio.NewReader(os.Stdin)
+    input, err := reader.ReadString('\n')
+    if err != nil {
+        return err
+    }
+    choice := strings.ToLower(strings.TrimSpace(input))
+    switch choice {
+    case "o", "overwrite":
+        if err := os.RemoveAll(workPath); err != nil {
+            return fmt.Errorf("failed to remove existing .work: %w", err)
+        }
+        return nil
+    case "f", "fill-missing":
+        return nil
+    default:
+        return fmt.Errorf("init cancelled")
+    }
 }

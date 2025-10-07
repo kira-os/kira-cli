@@ -15,6 +15,7 @@ type Config struct {
 	Validation   ValidationConfig       `yaml:"validation"`
 	Commit       CommitConfig          `yaml:"commit"`
 	Release      ReleaseConfig         `yaml:"release"`
+    DefaultStatus string               `yaml:"default_status"`
 }
 
 type ValidationConfig struct {
@@ -48,6 +49,7 @@ var DefaultConfig = Config{
 		"done":      "4_done",
 		"archived":  "z_archive",
 	},
+    DefaultStatus: "backlog",
 	Validation: ValidationConfig{
 		RequiredFields: []string{"id", "title", "status", "kind", "created"},
 		IDFormat:       "^\\d{3}$",
@@ -125,6 +127,10 @@ func mergeWithDefaults(config *Config) {
 	if config.Release.ArchiveDateFormat == "" {
 		config.Release.ArchiveDateFormat = DefaultConfig.Release.ArchiveDateFormat
 	}
+
+    if config.DefaultStatus == "" {
+        config.DefaultStatus = DefaultConfig.DefaultStatus
+    }
 }
 
 func SaveConfig(config *Config) error {

@@ -44,6 +44,20 @@ func TestCLIIntegration(t *testing.T) {
 		assert.FileExists(t, ".work/IDEAS.md")
 		assert.FileExists(t, ".work/kira.yml")
 
+		// Ensure .gitkeep files exist in status folders and templates
+		gitkeepPaths := []string{
+			".work/0_backlog/.gitkeep",
+			".work/1_todo/.gitkeep",
+			".work/2_doing/.gitkeep",
+			".work/3_review/.gitkeep",
+			".work/4_done/.gitkeep",
+			".work/z_archive/.gitkeep",
+			".work/templates/.gitkeep",
+		}
+		for _, p := range gitkeepPaths {
+			assert.FileExists(t, p)
+		}
+
 		// Test kira idea
         ideaCmd := exec.Command("./kira", "idea", "Test idea for integration")
         output, err = ideaCmd.CombinedOutput()
@@ -66,6 +80,76 @@ func TestCLIIntegration(t *testing.T) {
         output, err = doctorCmd.CombinedOutput()
 		require.NoError(t, err, "doctor failed: %s", string(output))
 		assert.Contains(t, string(output), "No duplicate IDs found")
+	})
+
+	t.Run("default status on new without status argument", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		os.Chdir(tmpDir)
+		defer os.Chdir("/")
+
+		// Build the kira binary
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
+		defer os.Remove("kira")
+
+		// Initialize workspace
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
+		require.NoError(t, err, "init failed: %s", string(output))
+
+		// Create work item without status (should default to backlog)
+		newCmd := exec.Command("./kira", "new", "prd", "Default Status Feature", "--ignore-input")
+		output, err = newCmd.CombinedOutput()
+		require.NoError(t, err, "new failed: %s", string(output))
+
+		// Expect file in 0_backlog
+		matches, _ := filepath.Glob(".work/0_backlog/*default-status-feature*.prd.md")
+		assert.NotEmpty(t, matches, "expected default status file in backlog")
+	})
+
+	t.Run("init handles existing .work with --fill-missing and --force", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		os.Chdir(tmpDir)
+		defer os.Chdir("/")
+
+		// Build the kira binary
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
+		defer os.Remove("kira")
+
+		// Initialize workspace
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
+		require.NoError(t, err, "init failed: %s", string(output))
+
+		// Create a sentinel and remove a folder to simulate missing
+		require.NoError(t, os.WriteFile(".work/1_todo/sentinel.txt", []byte("x"), 0644))
+		require.NoError(t, os.RemoveAll(".work/3_review"))
+
+		// Fill missing
+		fillCmd := exec.Command("./kira", "init", "--fill-missing")
+		output, err = fillCmd.CombinedOutput()
+		require.NoError(t, err, "fill-missing failed: %s", string(output))
+		assert.FileExists(t, ".work/1_todo/sentinel.txt")
+		assert.DirExists(t, ".work/3_review")
+
+		// Force overwrite
+		forceCmd := exec.Command("./kira", "init", "--force")
+		output, err = forceCmd.CombinedOutput()
+		require.NoError(t, err, "force failed: %s", string(output))
+		assert.NoFileExists(t, ".work/1_todo/sentinel.txt")
+		assert.DirExists(t, ".work/3_review")
+		assert.FileExists(t, ".work/3_review/.gitkeep")
 	})
 
 	t.Run("work item creation and management", func(t *testing.T) {

@@ -85,18 +85,10 @@ func createWorkItem(cfg *config.Config, args []string, ignoreInput bool, inputVa
 		}
 	}
 
-	// Get status if not provided
-	if status == "" {
-		if ignoreInput {
-			status = "todo" // default
-		} else {
-			var err error
-			status, err = selectStatus(cfg)
-			if err != nil {
-				return err
-			}
-		}
-	}
+    // Get status if not provided: default to config.DefaultStatus (no prompt)
+    if status == "" {
+        status = cfg.DefaultStatus
+    }
 
 	// Get next ID
 	nextID, err := validation.GetNextID()

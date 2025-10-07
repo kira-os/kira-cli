@@ -23,6 +23,7 @@ Thumbs.db
 
 # Demo workspace
 demo-workspace/
+e2e-test/
 
 # Temporary files
 *.tmp
