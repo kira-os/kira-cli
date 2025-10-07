@@ -45,7 +45,7 @@ This flat structure provides clear separation between different work states whil
 ### Files
 **kira.yml**: Configuration file for managing the kira CLI tool settings and folder structure.
 
-**IDEAS.md**: Quick capture file for unstructured ideas - a low-effort dumping ground for capturing details without the distraction of fitting them into a formal template. 
+**IDEAS.md**: Quick capture file for unstructured ideas - a low-effort dumping ground for capturing details without the distraction of fitting them into a formal template.
 
 
 ### Folders
@@ -85,7 +85,7 @@ Creates a new work-item from a template in the specified status folder.
 
 #### `kira move <work-item-id> [target-status]`
 Moves the work item to the target status folder.
-- **Arguments**: 
+- **Arguments**:
   - `work-item-id` (required) - ID of the work item to move
   - `target-status` (optional) - Status name (backlog, todo, doing, review, done, archived). Will display options if not provided
 - **Example**: `kira move 001` or `kira move 001 doing`
@@ -105,7 +105,7 @@ Checks for and fixes duplicate work item IDs by updating the latest one with a n
 
 #### `kira release [status|path] [subfolder]`
 Generates release notes and archives completed work items.
-- **Arguments**: 
+- **Arguments**:
   - `status|path` (optional) - Status name (backlog, todo, doing, review, done, archived) or direct path to folder, defaults to done
   - `subfolder` (optional) - Subfolder within the status folder to release
 - **Behavior**:
@@ -469,3 +469,7 @@ kira/
 - Handles different line ending formats
 - Respects system file permissions
 
+# Follow-up actions 1
+- [ ] Ensure there's a .gitkeep file in each of the folders created by the init command.
+- [ ] When kira init is run, if it detects a .work directory, it should offer the user the option cancel, overwrite or create missing files and folders
+- [ ] status should be optional in `kira new [template] [work-item] [status] [description]` and default to a config value which should be backlog
