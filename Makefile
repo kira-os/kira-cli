@@ -2,7 +2,11 @@
 
 # Build the kira binary
 build:
-	go build -o kira cmd/kira/main.go
+	$(eval GIT_TAG := $(shell git describe --tags --always 2>/dev/null || echo dev))
+	$(eval GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown))
+	$(eval BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ))
+	$(eval GIT_DIRTY := $(shell test -n "$(shell git status --porcelain 2>/dev/null)" && echo dirty || echo clean))
+	go build -ldflags "-X 'kira/internal/commands.Version=$(GIT_TAG)' -X 'kira/internal/commands.Commit=$(GIT_COMMIT)' -X 'kira/internal/commands.BuildDate=$(BUILD_DATE)' -X 'kira/internal/commands.Dirty=$(GIT_DIRTY)'" -o kira cmd/kira/main.go
 
 # Run tests
 test:

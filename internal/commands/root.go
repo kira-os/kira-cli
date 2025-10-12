@@ -10,8 +10,8 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "kira",
 	Short: "A git-based, plaintext productivity tool",
-	Long: `Kira is a git-based, plaintext productivity tool designed with both 
-clankers (LLMs) and meatbags (people) in mind. It uses markdown files, git, 
+	Long: `Kira is a git-based, plaintext productivity tool designed with both
+clankers (LLMs) and meatbags (people) in mind. It uses markdown files, git,
 and a lightweight CLI to manage and coordinate work.`,
 }
 
@@ -29,6 +29,7 @@ func init() {
 	rootCmd.AddCommand(releaseCmd)
 	rootCmd.AddCommand(abandonCmd)
 	rootCmd.AddCommand(saveCmd)
+	rootCmd.AddCommand(versionCmd)
 }
 
 func checkWorkDir() error {
@@ -37,4 +38,3 @@ func checkWorkDir() error {
 	}
 	return nil
 }
-

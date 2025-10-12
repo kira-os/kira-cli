@@ -10,9 +10,10 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	t.Run("loads default config when no file exists", func(t *testing.T) {
-		// Remove any existing config file
+		// Remove any existing config files
+		os.Remove("kira.yml")
 		os.Remove(".work/kira.yml")
-		
+
 		config, err := LoadConfig()
 		require.NoError(t, err)
 		assert.Equal(t, "1.0", config.Version)
@@ -21,18 +22,17 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("loads config from file when exists", func(t *testing.T) {
-		// Create a test config file
+		// Create a test config file at root-level
 		testConfig := `version: "2.0"
 templates:
   prd: "custom/prd.md"
 status_folders:
   todo: "custom_todo"
 `
-		
-		os.MkdirAll(".work", 0755)
-		os.WriteFile(".work/kira.yml", []byte(testConfig), 0644)
-		defer os.RemoveAll(".work")
-		
+
+		os.WriteFile("kira.yml", []byte(testConfig), 0644)
+		defer os.Remove("kira.yml")
+
 		config, err := LoadConfig()
 		require.NoError(t, err)
 		assert.Equal(t, "2.0", config.Version)
@@ -43,22 +43,20 @@ status_folders:
 
 func TestSaveConfig(t *testing.T) {
 	t.Run("saves config to file", func(t *testing.T) {
-		os.MkdirAll(".work", 0755)
-		defer os.RemoveAll(".work")
-		
+		defer os.Remove("kira.yml")
+
 		config := &Config{
 			Version: "1.0",
 			Templates: map[string]string{
 				"prd": "test/prd.md",
 			},
 		}
-		
+
 		err := SaveConfig(config)
 		require.NoError(t, err)
-		
-		// Verify file was created
-		_, err = os.Stat(".work/kira.yml")
+
+		// Verify file was created at root
+		_, err = os.Stat("kira.yml")
 		assert.NoError(t, err)
 	})
 }
-

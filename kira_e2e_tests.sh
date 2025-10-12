@@ -80,15 +80,20 @@ done
 # Test 3: Check required files
 echo ""
 echo "📄 Test 3: Check required files"
-REQUIRED_FILES=("IDEAS.md" "kira.yml")
-for file in "${REQUIRED_FILES[@]}"; do
-    if [ -f ".work/$file" ]; then
-        echo "✅ File .work/$file exists"
-    else
-        echo "❌ File .work/$file missing"
-        exit 1
-    fi
-done
+# .work/IDEAS.md should exist
+if [ -f ".work/IDEAS.md" ]; then
+    echo "✅ File .work/IDEAS.md exists"
+else
+    echo "❌ File .work/IDEAS.md missing"
+    exit 1
+fi
+# kira.yml should exist at repo root (test dir)
+if [ -f "kira.yml" ]; then
+    echo "✅ File kira.yml exists at root"
+else
+    echo "❌ File kira.yml missing at root"
+    exit 1
+fi
 
 # Test 4: Check templates
 echo ""
@@ -210,7 +215,7 @@ else
     exit 1
 fi
 
-# Test init flags: fill-missing and force
+# Test 11: init flags: fill-missing and force
 echo ""
 echo "🧪 Test 11: init --fill-missing and --force"
 # Remove a folder and create sentinel
@@ -228,6 +233,43 @@ else
   exit 1
 fi
 
+# Test 12: Release command
+echo ""
+echo "🧪 Test 12: release command"
+# Create a done item with Release Notes and run release
+cat > .work/4_done/001-done-feature.prd.md << 'EOF'
+---
+id: 001
+title: Done Feature
+status: done
+kind: prd
+created: 2024-01-01
+---
+
+# Done Feature
+
+## Release Notes
+This is a release note entry.
+EOF
+
+if "$KIRA_BIN" release; then
+  if ls .work/z_archive/*/4_done/001-done-feature.prd.md > /dev/null 2>&1 && [ ! -f .work/4_done/001-done-feature.prd.md ]; then
+    echo "✅ Release archived done items and removed originals"
+  else
+    echo "❌ Release did not archive as expected"
+    exit 1
+  fi
+  if grep -q "This is a release note entry." RELEASES.md; then
+    echo "✅ Release notes appended to RELEASES.md"
+  else
+    echo "❌ Release notes missing in RELEASES.md"
+    exit 1
+  fi
+else
+  echo "❌ kira release failed"
+  exit 1
+fi
+
 if "$KIRA_BIN" init --force; then
   if [ ! -f .work/1_todo/sentinel.txt ] && [ -f .work/3_review/.gitkeep ]; then
     echo "✅ force overwrote workspace and recreated structure"
@@ -237,6 +279,92 @@ if "$KIRA_BIN" init --force; then
   fi
 else
   echo "❌ init --force failed"
+  exit 1
+fi
+
+# Test 13: abandon command
+echo ""
+echo "🧪 Test 13: abandon command"
+# Re-init clean workspace
+"$KIRA_BIN" init --force > /dev/null
+# Create todo item and abandon by id with reason
+cat > .work/1_todo/001-todo-one.prd.md << 'EOF'
+---
+id: 001
+title: Todo One
+status: todo
+kind: prd
+created: 2024-01-01
+---
+EOF
+"$KIRA_BIN" abandon 001 "No longer needed"
+if ls .work/z_archive/*/1_todo/001-todo-one.prd.md > /dev/null 2>&1 && [ ! -f .work/1_todo/001-todo-one.prd.md ]; then
+  echo "✅ Abandon by id archived and removed original"
+  if grep -q "## Abandonment" .work/z_archive/*/1_todo/001-todo-one.prd.md && grep -q "No longer needed" .work/z_archive/*/1_todo/001-todo-one.prd.md; then
+    echo "✅ Abandonment reason added"
+  else
+    echo "❌ Abandonment reason missing"
+    exit 1
+  fi
+else
+  echo "❌ Abandon by id failed"
+  exit 1
+fi
+
+# Create subfolder item and abandon folder
+mkdir -p .work/1_todo/sub
+cat > .work/1_todo/sub/002-todo-two.prd.md << 'EOF'
+---
+id: 002
+title: Todo Two
+status: todo
+kind: prd
+created: 2024-01-01
+---
+EOF
+"$KIRA_BIN" abandon todo sub
+if ls .work/z_archive/*/sub/002-todo-two.prd.md > /dev/null 2>&1 && [ ! -f .work/1_todo/sub/002-todo-two.prd.md ]; then
+  echo "✅ Abandon folder archived and removed originals"
+else
+  echo "❌ Abandon folder failed"
+  exit 1
+fi
+
+# Test 14: save command happy path in git repo
+echo ""
+echo "🧪 Test 14: save command"
+"$KIRA_BIN" init --force > /dev/null
+git init > /dev/null 2>&1
+git config user.email test@example.com
+git config user.name "Test User"
+git add .
+git commit -m "init" > /dev/null 2>&1
+cat > .work/1_todo/001-save-test.prd.md << 'EOF'
+---
+id: 001
+title: Save Test
+status: todo
+kind: prd
+created: 2024-01-01
+---
+
+# Save Test
+EOF
+if "$KIRA_BIN" save "Custom commit message"; then
+  if grep -q "^updated:" .work/1_todo/001-save-test.prd.md; then
+    echo "✅ Updated timestamp added"
+  else
+    echo "❌ Updated timestamp missing"
+    exit 1
+  fi
+  if git log -1 --pretty=%B | grep -q "Custom commit message"; then
+    echo "✅ Commit with custom message created"
+  else
+    echo "❌ Commit message mismatch"
+    exit 1
+  fi
+else
+  echo "❌ kira save failed"
   exit 1
 fi
 

@@ -9,13 +9,13 @@ import (
 )
 
 type Config struct {
-	Version      string                 `yaml:"version"`
-	Templates    map[string]string      `yaml:"templates"`
-	StatusFolders map[string]string     `yaml:"status_folders"`
-	Validation   ValidationConfig       `yaml:"validation"`
-	Commit       CommitConfig          `yaml:"commit"`
-	Release      ReleaseConfig         `yaml:"release"`
-    DefaultStatus string               `yaml:"default_status"`
+	Version       string            `yaml:"version"`
+	Templates     map[string]string `yaml:"templates"`
+	StatusFolders map[string]string `yaml:"status_folders"`
+	Validation    ValidationConfig  `yaml:"validation"`
+	Commit        CommitConfig      `yaml:"commit"`
+	Release       ReleaseConfig     `yaml:"release"`
+	DefaultStatus string            `yaml:"default_status"`
 }
 
 type ValidationConfig struct {
@@ -29,27 +29,27 @@ type CommitConfig struct {
 }
 
 type ReleaseConfig struct {
-	ReleasesFile     string `yaml:"releases_file"`
+	ReleasesFile      string `yaml:"releases_file"`
 	ArchiveDateFormat string `yaml:"archive_date_format"`
 }
 
 var DefaultConfig = Config{
 	Version: "1.0",
 	Templates: map[string]string{
-		"prd":    "templates/template.prd.md",
-		"issue":  "templates/template.issue.md",
-		"spike":  "templates/template.spike.md",
-		"task":   "templates/template.task.md",
+		"prd":   "templates/template.prd.md",
+		"issue": "templates/template.issue.md",
+		"spike": "templates/template.spike.md",
+		"task":  "templates/template.task.md",
 	},
 	StatusFolders: map[string]string{
-		"backlog":   "0_backlog",
-		"todo":      "1_todo",
-		"doing":     "2_doing",
-		"review":    "3_review",
-		"done":      "4_done",
-		"archived":  "z_archive",
+		"backlog":  "0_backlog",
+		"todo":     "1_todo",
+		"doing":    "2_doing",
+		"review":   "3_review",
+		"done":     "4_done",
+		"archived": "z_archive",
 	},
-    DefaultStatus: "backlog",
+	DefaultStatus: "backlog",
 	Validation: ValidationConfig{
 		RequiredFields: []string{"id", "title", "status", "kind", "created"},
 		IDFormat:       "^\\d{3}$",
@@ -59,16 +59,22 @@ var DefaultConfig = Config{
 		DefaultMessage: "Update work items",
 	},
 	Release: ReleaseConfig{
-		ReleasesFile:     "RELEASES.md",
+		ReleasesFile:      "RELEASES.md",
 		ArchiveDateFormat: "2006-01-02",
 	},
 }
 
 func LoadConfig() (*Config, error) {
-	configPath := ".work/kira.yml"
+	// Prefer root-level kira.yml; fall back to legacy .work/kira.yml if present
+	rootPath := "kira.yml"
+	legacyPath := filepath.Join(".work", "kira.yml")
 
-	// Check if config file exists
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+	configPath := ""
+	if _, err := os.Stat(rootPath); err == nil {
+		configPath = rootPath
+	} else if _, err := os.Stat(legacyPath); err == nil {
+		configPath = legacyPath
+	} else {
 		return &DefaultConfig, nil
 	}
 
@@ -128,31 +134,32 @@ func mergeWithDefaults(config *Config) {
 		config.Release.ArchiveDateFormat = DefaultConfig.Release.ArchiveDateFormat
 	}
 
-    if config.DefaultStatus == "" {
-        config.DefaultStatus = DefaultConfig.DefaultStatus
-    }
+	if config.DefaultStatus == "" {
+		config.DefaultStatus = DefaultConfig.DefaultStatus
+	}
 }
 
 func SaveConfig(config *Config) error {
-    return SaveConfigToDir(config, ".")
+	return SaveConfigToDir(config, ".")
 }
 
 // SaveConfigToDir saves the config to the specified target directory under .work/kira.yml
 func SaveConfigToDir(config *Config, targetDir string) error {
-    data, err := yaml.Marshal(config)
-    if err != nil {
-        return fmt.Errorf("failed to marshal config: %w", err)
-    }
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
 
-    configPath := filepath.Join(targetDir, ".work", "kira.yml")
-    if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-        return fmt.Errorf("failed to create config directory: %w", err)
-    }
+	// Write to root-level kira.yml in the target directory
+	configPath := filepath.Join(targetDir, "kira.yml")
+	// Ensure targetDir exists
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		return fmt.Errorf("failed to ensure target directory: %w", err)
+	}
 
-    if err := os.WriteFile(configPath, data, 0644); err != nil {
-        return fmt.Errorf("failed to write config file: %w", err)
-    }
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
 
-    return nil
+	return nil
 }
-

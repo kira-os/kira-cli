@@ -1,14 +1,15 @@
 package commands
 
 import (
-    "os"
-    "os/exec"
-    "path/filepath"
-    "runtime"
-    "testing"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
 
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCLIIntegration(t *testing.T) {
@@ -17,19 +18,19 @@ func TestCLIIntegration(t *testing.T) {
 		os.Chdir(tmpDir)
 		defer os.Chdir("/")
 
-        // Build the kira binary for testing using the repo root as working directory
-        _, thisFile, _, _ := runtime.Caller(0)
-        repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
-        outPath := filepath.Join(tmpDir, "kira")
-        buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
-        buildCmd.Dir = repoRoot
-        output, err := buildCmd.CombinedOutput()
-        require.NoError(t, err, "build failed: %s", string(output))
+		// Build the kira binary for testing using the repo root as working directory
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
 		defer os.Remove("kira")
 
 		// Test kira init
-        initCmd := exec.Command("./kira", "init")
-        output, err = initCmd.CombinedOutput()
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
 		require.NoError(t, err, "init failed: %s", string(output))
 		assert.Contains(t, string(output), "Initialized kira workspace")
 
@@ -42,7 +43,7 @@ func TestCLIIntegration(t *testing.T) {
 		assert.DirExists(t, ".work/z_archive")
 		assert.DirExists(t, ".work/templates")
 		assert.FileExists(t, ".work/IDEAS.md")
-		assert.FileExists(t, ".work/kira.yml")
+		assert.FileExists(t, "kira.yml")
 
 		// Ensure .gitkeep files exist in status folders and templates
 		gitkeepPaths := []string{
@@ -59,8 +60,8 @@ func TestCLIIntegration(t *testing.T) {
 		}
 
 		// Test kira idea
-        ideaCmd := exec.Command("./kira", "idea", "Test idea for integration")
-        output, err = ideaCmd.CombinedOutput()
+		ideaCmd := exec.Command("./kira", "idea", "Test idea for integration")
+		output, err = ideaCmd.CombinedOutput()
 		require.NoError(t, err, "idea failed: %s", string(output))
 		assert.Contains(t, string(output), "Added idea: Test idea for integration")
 
@@ -70,14 +71,14 @@ func TestCLIIntegration(t *testing.T) {
 		assert.Contains(t, string(ideasContent), "Test idea for integration")
 
 		// Test kira lint (should pass with no work items)
-        lintCmd := exec.Command("./kira", "lint")
-        output, err = lintCmd.CombinedOutput()
+		lintCmd := exec.Command("./kira", "lint")
+		output, err = lintCmd.CombinedOutput()
 		require.NoError(t, err, "lint failed: %s", string(output))
 		assert.Contains(t, string(output), "No issues found")
 
 		// Test kira doctor (should pass with no duplicates)
-        doctorCmd := exec.Command("./kira", "doctor")
-        output, err = doctorCmd.CombinedOutput()
+		doctorCmd := exec.Command("./kira", "doctor")
+		output, err = doctorCmd.CombinedOutput()
 		require.NoError(t, err, "doctor failed: %s", string(output))
 		assert.Contains(t, string(output), "No duplicate IDs found")
 	})
@@ -157,19 +158,19 @@ func TestCLIIntegration(t *testing.T) {
 		os.Chdir(tmpDir)
 		defer os.Chdir("/")
 
-        // Build the kira binary for testing using the repo root as working directory
-        _, thisFile, _, _ := runtime.Caller(0)
-        repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
-        outPath := filepath.Join(tmpDir, "kira")
-        buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
-        buildCmd.Dir = repoRoot
-        output, err := buildCmd.CombinedOutput()
-        require.NoError(t, err, "build failed: %s", string(output))
+		// Build the kira binary for testing using the repo root as working directory
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
 		defer os.Remove("kira")
 
 		// Initialize workspace
-        initCmd := exec.Command("./kira", "init")
-        output, err = initCmd.CombinedOutput()
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
 		require.NoError(t, err, "init failed: %s", string(output))
 
 		// Create a work item using template input
@@ -207,14 +208,14 @@ Added user authentication system.
 		os.WriteFile(".work/1_todo/001-test-feature.prd.md", []byte(workItemContent), 0644)
 
 		// Test kira lint
-    lintCmd := exec.Command("./kira", "lint")
-    output, err = lintCmd.CombinedOutput()
+		lintCmd := exec.Command("./kira", "lint")
+		output, err = lintCmd.CombinedOutput()
 		require.NoError(t, err, "lint failed: %s", string(output))
 		assert.Contains(t, string(output), "No issues found")
 
 		// Test kira move
-    moveCmd := exec.Command("./kira", "move", "001", "doing")
-        output, err = moveCmd.CombinedOutput()
+		moveCmd := exec.Command("./kira", "move", "001", "doing")
+		output, err = moveCmd.CombinedOutput()
 		require.NoError(t, err, "move failed: %s", string(output))
 		assert.Contains(t, string(output), "Moved work item 001 to doing")
 
@@ -223,8 +224,8 @@ Added user authentication system.
 		assert.NoFileExists(t, ".work/1_todo/001-test-feature.prd.md")
 
 		// Test kira save (this will fail if git is not initialized, which is expected)
-        saveCmd := exec.Command("./kira", "save", "Test commit")
-        output, err = saveCmd.CombinedOutput()
+		saveCmd := exec.Command("./kira", "save", "Test commit")
+		output, err = saveCmd.CombinedOutput()
 		// We expect this to fail because git is not initialized
 		assert.Error(t, err)
 	})
@@ -234,19 +235,19 @@ Added user authentication system.
 		os.Chdir(tmpDir)
 		defer os.Chdir("/")
 
-        // Build the kira binary for testing using the repo root as working directory
-        _, thisFile, _, _ := runtime.Caller(0)
-        repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
-        outPath := filepath.Join(tmpDir, "kira")
-        buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
-        buildCmd.Dir = repoRoot
-        output, err := buildCmd.CombinedOutput()
-        require.NoError(t, err, "build failed: %s", string(output))
+		// Build the kira binary for testing using the repo root as working directory
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
 		defer os.Remove("kira")
 
 		// Initialize workspace
-        initCmd := exec.Command("./kira", "init")
-        output, err = initCmd.CombinedOutput()
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
 		require.NoError(t, err, "init failed: %s", string(output))
 
 		// Check that templates were created
@@ -267,9 +268,235 @@ Added user authentication system.
 		}
 
 		// Test help-inputs command
-        helpCmd := exec.Command("./kira", "new", "prd", "--help-inputs")
-        output, err = helpCmd.CombinedOutput()
+		helpCmd := exec.Command("./kira", "new", "prd", "--help-inputs")
+		output, err = helpCmd.CombinedOutput()
 		require.NoError(t, err, "help-inputs failed: %s", string(output))
 		assert.Contains(t, string(output), "Available inputs for template 'prd'")
+	})
+
+	t.Run("release command generates notes and archives done items", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		os.Chdir(tmpDir)
+		defer os.Chdir("/")
+
+		// Build the kira binary
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
+		defer os.Remove("kira")
+
+		// Initialize workspace
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
+		require.NoError(t, err, "init failed: %s", string(output))
+
+		// Create a done item with Release Notes section
+		require.NoError(t, os.MkdirAll(".work/4_done", 0755))
+		doneItem := `---
+id: 001
+title: Done Feature
+status: done
+kind: prd
+created: 2024-01-01
+---
+
+# Done Feature
+
+## Context
+Something
+
+## Release Notes
+This is a release note entry.
+`
+		require.NoError(t, os.WriteFile(".work/4_done/001-done-feature.prd.md", []byte(doneItem), 0644))
+
+		// Run release (default from done)
+		releaseCmd := exec.Command("./kira", "release")
+		output, err = releaseCmd.CombinedOutput()
+		require.NoError(t, err, "release failed: %s", string(output))
+		assert.Contains(t, string(output), "Released 1 work items")
+
+		// Check archived file exists and original removed
+		archivedMatches, _ := filepath.Glob(".work/z_archive/*/4_done/001-done-feature.prd.md")
+		assert.NotEmpty(t, archivedMatches, "archived file not found")
+		assert.NoFileExists(t, ".work/4_done/001-done-feature.prd.md")
+
+		// Check RELEASES.md contains note
+		releasesContent, err := os.ReadFile("RELEASES.md")
+		require.NoError(t, err)
+		assert.Contains(t, string(releasesContent), "This is a release note entry.")
+	})
+
+	t.Run("abandon command handles id, reason, status path and subfolder", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		os.Chdir(tmpDir)
+		defer os.Chdir("/")
+
+		// Build the kira binary
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
+		defer os.Remove("kira")
+
+		// Initialize workspace
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
+		require.NoError(t, err, "init failed: %s", string(output))
+
+		// Create two items in todo and a subfolder
+		require.NoError(t, os.MkdirAll(".work/1_todo/sub", 0755))
+		item1 := `---
+id: 001
+title: Todo One
+status: todo
+kind: prd
+created: 2024-01-01
+---
+`
+		item2 := `---
+id: 002
+title: Todo Two
+status: todo
+kind: prd
+created: 2024-01-01
+---
+`
+		require.NoError(t, os.WriteFile(".work/1_todo/001-todo-one.prd.md", []byte(item1), 0644))
+		require.NoError(t, os.WriteFile(".work/1_todo/sub/002-todo-two.prd.md", []byte(item2), 0644))
+
+		// Abandon by id with reason
+		abandonID := exec.Command("./kira", "abandon", "001", "No longer needed")
+		output, err = abandonID.CombinedOutput()
+		require.NoError(t, err, "abandon by id failed: %s", string(output))
+		// Verify archived
+		archived1, _ := filepath.Glob(".work/z_archive/*/1_todo/001-todo-one.prd.md")
+		assert.NotEmpty(t, archived1)
+		assert.NoFileExists(t, ".work/1_todo/001-todo-one.prd.md")
+		// Verify abandonment note present
+		content, err := os.ReadFile(archived1[0])
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "## Abandonment")
+		assert.Contains(t, string(content), "No longer needed")
+
+		// Abandon by status path subfolder (todo sub)
+		abandonFolder := exec.Command("./kira", "abandon", "todo", "sub")
+		output, err = abandonFolder.CombinedOutput()
+		require.NoError(t, err, "abandon folder failed: %s", string(output))
+		archived2, _ := filepath.Glob(".work/z_archive/*/sub/002-todo-two.prd.md")
+		assert.NotEmpty(t, archived2)
+		assert.NoFileExists(t, ".work/1_todo/sub/002-todo-two.prd.md")
+	})
+
+	t.Run("save command commits and updates timestamps in git repo", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		os.Chdir(tmpDir)
+		defer os.Chdir("/")
+
+		// Build binary
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
+		defer os.Remove("kira")
+
+		// git init
+		require.NoError(t, exec.Command("git", "init").Run())
+		require.NoError(t, exec.Command("git", "config", "user.email", "test@example.com").Run())
+		require.NoError(t, exec.Command("git", "config", "user.name", "Test User").Run())
+
+		// Initialize workspace and add initial commit
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
+		require.NoError(t, err, "init failed: %s", string(output))
+		require.NoError(t, exec.Command("git", "add", ".").Run())
+		require.NoError(t, exec.Command("git", "commit", "-m", "init").Run())
+
+		// Create a work item
+		item := `---
+id: 001
+title: Save Test
+status: todo
+kind: prd
+created: 2024-01-01
+---
+
+# Save Test
+`
+		require.NoError(t, os.WriteFile(".work/1_todo/001-save-test.prd.md", []byte(item), 0644))
+
+		// Run save with custom message
+		saveCmd := exec.Command("./kira", "save", "Custom commit message")
+		output, err = saveCmd.CombinedOutput()
+		require.NoError(t, err, "save failed: %s", string(output))
+		assert.Contains(t, string(output), "Work items saved and committed successfully.")
+
+		// Ensure updated field added
+		content, err := os.ReadFile(".work/1_todo/001-save-test.prd.md")
+		require.NoError(t, err)
+		assert.Contains(t, string(content), "updated:")
+
+		// Verify last commit message
+		logOut, err := exec.Command("git", "log", "-1", "--pretty=%B").Output()
+		require.NoError(t, err)
+		assert.Contains(t, string(logOut), "Custom commit message")
+
+		// Verify only .work files in commit
+		showOut, err := exec.Command("git", "show", "--name-only", "--pretty=", "HEAD").Output()
+		require.NoError(t, err)
+		for _, line := range strings.Split(strings.TrimSpace(string(showOut)), "\n") {
+			if line == "" {
+				continue
+			}
+			assert.True(t, strings.HasPrefix(line, ".work/"), "commit touched non-.work file: %s", line)
+		}
+	})
+
+	t.Run("save fails on validation errors", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		os.Chdir(tmpDir)
+		defer os.Chdir("/")
+
+		// Build binary
+		_, thisFile, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
+		outPath := filepath.Join(tmpDir, "kira")
+		buildCmd := exec.Command("go", "build", "-o", outPath, "./cmd/kira")
+		buildCmd.Dir = repoRoot
+		output, err := buildCmd.CombinedOutput()
+		require.NoError(t, err, "build failed: %s", string(output))
+		defer os.Remove("kira")
+
+		// Init workspace (no git init to force no commit path)
+		initCmd := exec.Command("./kira", "init")
+		output, err = initCmd.CombinedOutput()
+		require.NoError(t, err)
+
+		// Create invalid item
+		invalid := `---
+id: 001
+title: Bad
+status: invalid-status
+kind: prd
+created: 2024-01-01
+---
+`
+		require.NoError(t, os.WriteFile(".work/1_todo/001-bad.prd.md", []byte(invalid), 0644))
+
+		// Save should fail
+		saveCmd := exec.Command("./kira", "save", "attempt")
+		output, err = saveCmd.CombinedOutput()
+		assert.Error(t, err)
+		assert.Contains(t, string(output), "validation failed")
 	})
 }

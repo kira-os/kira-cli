@@ -37,8 +37,8 @@ This flat structure provides clear separation between different work states whil
 ├── 4_done/
 ├── templates/
 ├── z_archive/
-├── IDEAS.md
-└── kira.yml
+└── IDEAS.md
+kira.yml
 ```
 
 
@@ -406,58 +406,58 @@ kira/
 
 ### Core Functionality
 1. **Initialization**
-   - [ ] `kira init` creates folder structure and default templates
-   - [ ] `kira init <folder>` works with custom directory
-   - [ ] Existing files are preserved during init
+   - [x] `kira init` creates folder structure and default templates
+   - [x] `kira init <folder>` works with custom directory
+   - [x] Existing files are preserved during init
 
 2. **Work Item Creation**
-   - [ ] `kira new` prompts for all required information
-   - [ ] `kira new <template> <name> <folder>` creates item directly
-   - [ ] Template inputs are properly replaced
-   - [ ] File naming convention is followed
+   - [x] `kira new` prompts for all required information
+   - [x] `kira new <template> <status> <title> <description>` creates item directly
+   - [x] Template inputs are properly replaced
+   - [x] File naming convention is followed
 
 3. **Work Item Management**
-   - [ ] `kira move <id> <folder>` moves items between folders
-   - [ ] `kira move <id>` shows folder selection prompt
-   - [ ] Move operation updates git history
+   - [x] `kira move <id> <folder>` moves items between folders
+   - [x] `kira move <id>` shows folder selection prompt
+   - [x] Move operation updates git history
 
 4. **Ideas Capture**
-   - [ ] `kira idea <description>` appends to IDEAS.md with timestamp
-   - [ ] Multiple ideas are properly formatted
+   - [x] `kira idea <description>` appends to IDEAS.md with timestamp
+   - [x] Multiple ideas are properly formatted
 
 5. **Validation & Maintenance**
-   - [ ] `kira lint` reports all validation issues
-   - [ ] `kira doctor` fixes duplicate IDs and common issues
-   - [ ] All commands handle missing .work directory gracefully
+   - [x] `kira lint` reports all validation issues
+   - [x] `kira doctor` fixes duplicate IDs and common issues
+   - [x] All commands handle missing .work directory gracefully
 
 6. **Release Command**
-   - [ ] `kira release` generates notes from done folder and archives contents
-   - [ ] `kira release <status>` works with custom status folders
-   - [ ] `kira release <status> <subfolder>` works with subfolders
-   - [ ] `kira release <path>` works with direct folder paths
-   - [ ] Updates work item status to "released" before archival
-   - [ ] Prepends release notes to RELEASES.md file
-   - [ ] Archives contents to `z_archive/{date}/{original-path}/`
-   - [ ] Preserves folder structure during archival
-   - [ ] Only items with "# Release Notes" section are included in notes
+   - [x] `kira release` generates notes from done folder and archives contents
+   - [x] `kira release <status>` works with custom status folders
+   - [x] `kira release <status> <subfolder>` works with subfolders
+   - [x] `kira release <path>` works with direct folder paths
+   - [x] Updates work item status to "released" before archival
+   - [x] Prepends release notes to RELEASES.md file
+   - [x] Archives contents to `z_archive/{date}/{original-path}/`
+   - [x] Preserves folder structure during archival
+   - [x] Only items with "# Release Notes" section are included in notes
 
 7. **Abandon Command**
-   - [ ] `kira abandon <id>` updates status to "abandoned" and archives single work item
-   - [ ] `kira abandon <id> <reason>` adds abandonment reason to single work item
-   - [ ] `kira abandon <path>` abandons all work items in specified folder
-   - [ ] `kira abandon <path> <subfolder>` abandons items in subfolder within path
-   - [ ] Archives to `z_archive/{date}/{id}/` or `z_archive/{date}/{original-path}/` structure
-   - [ ] Preserves folder structure during archival
-   - [ ] Removes original files after successful archival
+   - [x] `kira abandon <id>` updates status to "abandoned" and archives single work item
+   - [x] `kira abandon <id> <reason>` adds abandonment reason to single work item
+   - [x] `kira abandon <path>` abandons all work items in specified folder
+   - [x] `kira abandon <path> <subfolder>` abandons items in subfolder within path
+   - [x] Archives to `z_archive/{date}/{id}/` or `z_archive/{date}/{original-path}/` structure
+   - [x] Preserves folder structure during archival
+   - [x] Removes original files after successful archival
 
 8. **Save Command**
-   - [ ] `kira save` updates `updated` timestamp for modified work items
-   - [ ] `kira save <message>` uses custom commit message
-   - [ ] Validates all non-archived work items before staging
-   - [ ] Stages only `.work/` directory changes
-   - [ ] Commits with provided message or config default when no external changes staged
-   - [ ] Warns and skips commit when external changes outside `.work/` are staged
-   - [ ] Fails if validation errors are found
+   - [x] `kira save` updates `updated` timestamp for modified work items
+   - [x] `kira save <message>` uses custom commit message
+   - [x] Validates all non-archived work items before staging
+   - [x] Stages only `.work/` directory changes
+   - [x] Commits with provided message or config default when no external changes staged
+   - [x] Warns and skips commit when external changes outside `.work/` are staged
+   - [x] Fails if validation errors are found
 
 ### Performance Requirements
 - Commands complete within 2 seconds for repositories with 1000+ work items
@@ -469,7 +469,11 @@ kira/
 - Handles different line ending formats
 - Respects system file permissions
 
-# Follow-up actions 1
-- [ ] Ensure there's a .gitkeep file in each of the folders created by the init command.
-- [ ] When kira init is run, if it detects a .work directory, it should offer the user the option cancel, overwrite or create missing files and folders
-- [ ] status should be optional in `kira new [template] [work-item] [status] [description]` and default to a config value which should be backlog
+# Follow-up tasks
+- [x] Ensure there's a .gitkeep file in each of the folders created by the init command.
+- [x] When kira init is run, if it detects a .work directory, it should offer the user the option cancel, overwrite or create missing files and folders
+- [x] status should be optional in `kira new [template] [work-item] [status] [description]` and default to a config value which should be backlog
+- [x] The kira.yaml file should be exist at the same level as the .work directory - currently it is in the .work directory so let's update code to support this.
+- [x] Add a script to install the kira binary globally for the user in a way that when they run the script again it will update with the latest version from the local source code.
+- [x] Add a version command to the kira binary that will print the version of the kira binary along with the git hash of the code that was used to build it.
+
