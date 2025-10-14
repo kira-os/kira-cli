@@ -225,7 +225,8 @@ Added user authentication system.
 
 		// Test kira save (this will fail if git is not initialized, which is expected)
 		saveCmd := exec.Command("./kira", "save", "Test commit")
-		output, err = saveCmd.CombinedOutput()
+		_, err = saveCmd.CombinedOutput()
+
 		// We expect this to fail because git is not initialized
 		assert.Error(t, err)
 	})
@@ -479,7 +480,7 @@ created: 2024-01-01
 
 		// Init workspace (no git init to force no commit path)
 		initCmd := exec.Command("./kira", "init")
-		output, err = initCmd.CombinedOutput()
+		_, err = initCmd.CombinedOutput()
 		require.NoError(t, err)
 
 		// Create invalid item
