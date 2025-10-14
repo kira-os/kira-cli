@@ -270,6 +270,8 @@ else
   exit 1
 fi
 
+# Independently set up a sentinel to validate --force behavior (do not rely on previous tests)
+touch .work/1_todo/sentinel.txt
 if "$KIRA_BIN" init --force; then
   if [ ! -f .work/1_todo/sentinel.txt ] && [ -f .work/3_review/.gitkeep ]; then
     echo "✅ force overwrote workspace and recreated structure"
