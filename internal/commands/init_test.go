@@ -3,6 +3,7 @@ package commands
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,5 +55,49 @@ func TestInitializeWorkspace(t *testing.T) {
 		content, err := os.ReadFile(existingFile)
 		require.NoError(t, err)
 		assert.Equal(t, "existing content", string(content))
+	})
+}
+
+func TestIdeasFileBehavior(t *testing.T) {
+	t.Run("prepends header when IDEAS.md exists without header", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Pre-create .work/IDEAS.md with custom content only
+		workDir := filepath.Join(tmpDir, ".work")
+		require.NoError(t, os.MkdirAll(workDir, 0755))
+		existing := "Custom ideas content\n- [2025-01-01] Something\n"
+		require.NoError(t, os.WriteFile(filepath.Join(workDir, "IDEAS.md"), []byte(existing), 0644))
+
+		// Initialize (should prepend header without wiping existing)
+		err := initializeWorkspace(tmpDir)
+		require.NoError(t, err)
+
+		data, readErr := os.ReadFile(filepath.Join(workDir, "IDEAS.md"))
+		require.NoError(t, readErr)
+		content := string(data)
+		assert.True(t, strings.HasPrefix(content, "# Ideas"))
+		assert.Contains(t, content, "Custom ideas content")
+	})
+
+	t.Run("does not duplicate header when re-running", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// First run creates header
+		require.NoError(t, initializeWorkspace(tmpDir))
+		// Second run should not duplicate header
+		require.NoError(t, initializeWorkspace(tmpDir))
+
+		data, err := os.ReadFile(filepath.Join(tmpDir, ".work", "IDEAS.md"))
+		require.NoError(t, err)
+		content := string(data)
+		// Count only top-level "# Ideas" lines (ignore "## Ideas")
+		lines := strings.Split(content, "\n")
+		headerCount := 0
+		for _, l := range lines {
+			if strings.TrimSpace(l) == "# Ideas" {
+				headerCount++
+			}
+		}
+		assert.Equal(t, 1, headerCount)
 	})
 }
