@@ -1,4 +1,4 @@
-# IDEAS
+# Ideas
 
 This file is for capturing quick ideas and thoughts that don't fit into formal work items yet.
 
